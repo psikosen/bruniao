@@ -1,0 +1,67 @@
+# Bruniao Trading Bot Configuration
+# Environment: Development
+
+# Polymarket API Configuration
+polymarket:
+  clob_url: "https://clob.polymarket.com"
+  gamma_url: "https://gamma-api.polymarket.com"
+  ws_url: "wss://clob.polymarket.com/ws"
+  # Set these via environment variables for security
+  # BRUNIAO_POLYMARKET__PRIVATE_KEY
+  # BRUNIAO_POLYMARKET__API_KEY
+  # BRUNIAO_POLYMARKET__API_SECRET
+  # BRUNIAO_POLYMARKET__API_PASSPHRASE
+
+# Risk Management Configuration
+# IMPORTANT: These are conservative settings for $100 starting capital
+risk:
+  # Maximum position size per market in USD
+  max_position_per_market: 10.00
+  # Maximum number of open positions across all markets
+  max_open_positions: 5
+  # Maximum daily drawdown as percentage (0.05 = 5%)
+  daily_drawdown_limit: 0.05
+  # Minimum top-of-book size required to trade (avoid illiquid markets)
+  min_book_size: 5.00
+  # Enable automatic kill switch when limits are breached
+  kill_switch_enabled: true
+  # Maximum single order size in USD
+  max_order_size: 5.00
+
+# Strategy Configuration
+strategy:
+  # Main loop interval in milliseconds
+  loop_interval_ms: 100
+  # Market making spread in ticks (1 tick = $0.01)
+  mm_spread_ticks: 1
+  # Size of market making quotes in USD
+  mm_quote_size: 2.00
+  # Inventory skew threshold for quote adjustment
+  inventory_skew_threshold: 0.5
+  # Arbitrage threshold - minimum profit margin to execute complement arb
+  # 0.02 = 2% minimum profit after fees
+  arb_threshold: 0.02
+  # List of market condition IDs to trade
+  markets: []
+
+# Database Configuration
+database:
+  sqlite_path: "data/bruniao.db"
+
+# Qdrant Vector Database Configuration
+qdrant:
+  url: "http://localhost:6333"
+  collection_name: "trading_decisions"
+  vector_size: 1536
+
+# LLM Configuration for Bot Debates and Analysis
+llm:
+  provider: "anthropic"  # or "openai"
+  model: "claude-3-haiku-20240307"
+  max_tokens: 1024
+  temperature: 0.0
+  # Cache settings for prompt caching
+  cache:
+    enabled: true
+    max_entries: 1000
+    default_ttl_seconds: 3600
