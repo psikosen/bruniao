@@ -50,3 +50,47 @@ llm:
     enabled: true
     max_entries: 5000
     default_ttl_seconds: 3600
+
+# DragonflyDB - High-Performance Distributed Cache
+dragonfly:
+  url: "redis://dragonfly:6379"
+  pool_size: 20
+  prefix: "bruniao"
+  cache_ttl:
+    orderbook: 5
+    market_data: 60
+    position: 30
+    prompt: 3600
+    debate: 1800
+    embedding: 86400
+
+# RabbitMQ - Message Queue
+rabbitmq:
+  url: "amqp://bruniao:${RABBITMQ_PASSWORD}@rabbitmq:5672/trading"
+  prefetch_count: 10
+  exchanges:
+    trading: "trading"
+    signals: "signals"
+    orders: "orders"
+    risk: "risk"
+    debates: "debates"
+    events: "events"
+  workers:
+    debate:
+      max_concurrent: 5
+      max_rounds: 5
+
+# Infrastructure Health Checks
+health:
+  enabled: true
+  interval_seconds: 30
+  services:
+    - name: "dragonfly"
+      type: "redis"
+      url: "redis://dragonfly:6379"
+    - name: "rabbitmq"
+      type: "amqp"
+      url: "amqp://bruniao:${RABBITMQ_PASSWORD}@rabbitmq:5672/trading"
+    - name: "qdrant"
+      type: "http"
+      url: "http://qdrant:6333/health"
