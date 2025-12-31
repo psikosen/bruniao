@@ -263,7 +263,7 @@ impl PolymarketClient {
     }
 
     /// Sign a request for L2 authentication
-    fn sign_request<T: Serialize>(
+    fn sign_request<T: Serialize + 'static>(
         &self,
         method: &str,
         path: &str,
@@ -460,4 +460,3 @@ struct BalanceResponse {
 }
 
 // Add hmac and sha2 dependencies
-use std::any::TypeId;

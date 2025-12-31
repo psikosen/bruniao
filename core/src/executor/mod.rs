@@ -60,7 +60,7 @@ impl OrderExecutor {
 
         // Place order via API
         match self.client.place_order(&order).await {
-            Ok(response) => {
+            Ok(_response) => {
                 order.status = OrderStatus::Open;
                 info!(
                     order_id = %order.id,
@@ -237,7 +237,7 @@ impl OrderExecutor {
         let exchange_ids: std::collections::HashSet<_> =
             exchange_orders.iter().map(|o| o.id).collect();
 
-        orders.retain(|id, order| {
+        orders.retain(|id, _order| {
             if !exchange_ids.contains(id) {
                 debug!(order_id = %id, "Order no longer on exchange");
                 false

@@ -183,7 +183,7 @@ impl OrderBookManager {
 
         // One tick = 0.01
         let tick = Decimal::from_str("0.01").unwrap();
-        let spread_adjustment = tick * Decimal::from(spread_ticks);
+        let _spread_adjustment = tick * Decimal::from(spread_ticks);
 
         // Base quotes: improve by 1 tick
         let mut bid_price = best_bid.price + tick;
