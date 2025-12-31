@@ -5,7 +5,7 @@
 use crate::models::{
     DecisionType, Order, OrderType, Side, StrategyConfig, TokenType, TradingDecision,
 };
-use crate::orderbook::{ArbitrageOpportunity, MarketMakingQuotes, OrderBookManager};
+use crate::orderbook::{MarketMakingQuotes, OrderBookManager};
 use rust_decimal::Decimal;
 use std::collections::HashMap;
 use tracing::{debug, info};
@@ -148,11 +148,15 @@ impl StrategyEngine {
     ) -> Vec<TradingDecision> {
         let mut decisions = Vec::new();
 
-        for market in self.markets.values() {
-            if !market.enabled {
-                continue;
-            }
+        // Collect markets to process (clone to avoid borrow conflicts)
+        let markets: Vec<MarketConfig> = self
+            .markets
+            .values()
+            .filter(|m| m.enabled)
+            .cloned()
+            .collect();
 
+        for market in markets {
             // Generate quotes for YES token
             if let Some(quotes) = orderbook.get_mm_quotes(
                 &market.yes_token_id,
@@ -160,7 +164,7 @@ impl StrategyEngine {
                 self.config.mm_quote_size,
                 Decimal::ZERO, // Would get inventory skew from risk manager
             ) {
-                let decisions_yes = self.create_mm_decisions(market, &quotes, TokenType::Yes);
+                let decisions_yes = self.create_mm_decisions(&market, &quotes, TokenType::Yes);
                 decisions.extend(decisions_yes);
             }
 
@@ -171,7 +175,7 @@ impl StrategyEngine {
                 self.config.mm_quote_size,
                 Decimal::ZERO,
             ) {
-                let decisions_no = self.create_mm_decisions(market, &quotes, TokenType::No);
+                let decisions_no = self.create_mm_decisions(&market, &quotes, TokenType::No);
                 decisions.extend(decisions_no);
             }
         }
@@ -196,7 +200,7 @@ impl StrategyEngine {
             .last_quotes
             .get(token_id)
             .map(|(old_bid, old_ask)| {
-                let tick = Decimal::from_str_exact("0.01").unwrap();
+                let tick = Decimal::from_str("0.01").unwrap();
                 (quotes.bid_price - *old_bid).abs() >= tick
                     || (quotes.ask_price - *old_ask).abs() >= tick
             })
@@ -277,12 +281,6 @@ impl StrategyEngine {
 }
 
 use std::str::FromStr;
-
-impl Decimal {
-    fn from_str_exact(s: &str) -> Result<Self, rust_decimal::Error> {
-        Self::from_str(s)
-    }
-}
 
 #[cfg(test)]
 mod tests {

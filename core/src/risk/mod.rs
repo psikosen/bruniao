@@ -3,7 +3,9 @@
 //! Enforces trading limits and implements kill-switch functionality
 
 use crate::executor::OrderExecutor;
-use crate::models::{Order, Position, RiskConfig, Side, TradingDecision};
+use crate::models::{Position, RiskConfig, Side, TradingDecision};
+#[cfg(test)]
+use crate::models::Order;
 use anyhow::Result;
 use rust_decimal::Decimal;
 use std::collections::HashMap;

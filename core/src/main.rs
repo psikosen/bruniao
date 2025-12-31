@@ -159,7 +159,7 @@ async fn run_strategy_loop(state: Arc<AppState>) {
 
         // Execute decisions through risk manager
         for decision in decisions {
-            let mut risk_manager = state.risk_manager.write().await;
+            let risk_manager = state.risk_manager.write().await;
             match risk_manager.validate_order(&decision) {
                 Ok(_) => {
                     drop(risk_manager);
