@@ -65,3 +65,20 @@ llm:
     enabled: true
     max_entries: 1000
     default_ttl_seconds: 3600
+
+# Browser Configuration (Azul TUI Browser)
+# Enables agents to search the web for market research
+# Requires Azul: https://github.com/0xSero/Azul
+browser:
+  # Toggle browser functionality on/off
+  enabled: false
+  # Path to Azul binary (defaults to "azul" in PATH)
+  azul_path: "azul"
+  # Enable JavaScript rendering (requires Chrome/Chromium)
+  js_rendering: false
+  # AI provider for browser summarization
+  ai_provider: "anthropic"
+  # Default search engine: duckduckgo, google, wikipedia, arxiv, pubmed, googlescholar
+  default_search_engine: "duckduckgo"
+  # Request timeout in seconds
+  timeout_seconds: 30

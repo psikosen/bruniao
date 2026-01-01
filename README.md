@@ -12,12 +12,13 @@ bruniao/
 │   │   ├── executor/        # Order execution engine
 │   │   ├── strategy/        # Trading strategies
 │   │   ├── risk/            # Risk management & kill-switch
+│   │   ├── browser/         # Azul browser integration
 │   │   └── ws/              # WebSocket handlers
 │   └── Cargo.toml
 ├── analysis/                # Python analysis layer
 │   ├── strategies/          # Strategy development
 │   ├── backtesting/         # Historical testing
-│   └── signals/             # Signal generation
+│   └── signals/             # Signal generation + browser
 ├── memory/                  # Qdrant vector storage
 │   ├── embeddings/          # Trade/decision embeddings
 │   └── retrieval/           # Memory retrieval for bots
@@ -56,6 +57,12 @@ bruniao/
 - Efficient LLM interactions with cached context
 - Reduced latency for repetitive analysis
 - Cost optimization for AI-powered decisions
+
+### Browser Research (Optional)
+- Integration with [Azul TUI Browser](https://github.com/0xSero/Azul)
+- Web search across DuckDuckGo, Google, Wikipedia, arXiv
+- AI-powered page summarization for market research
+- Toggle on/off via config: `browser.enabled: true/false`
 
 ## Configuration
 

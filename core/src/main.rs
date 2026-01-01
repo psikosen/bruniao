@@ -4,6 +4,7 @@
 //! arbitrage detection, and AI-powered strategy analysis.
 
 mod api;
+mod browser;
 mod executor;
 mod models;
 mod orderbook;
@@ -19,6 +20,7 @@ use tokio::sync::RwLock;
 use tracing::{info, Level};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
+use crate::browser::MarketResearcher;
 use crate::executor::OrderExecutor;
 use crate::orderbook::OrderBookManager;
 use crate::risk::RiskManager;
@@ -48,6 +50,7 @@ pub struct AppState {
     pub risk_manager: Arc<RwLock<RiskManager>>,
     pub strategy_engine: Arc<RwLock<StrategyEngine>>,
     pub order_executor: Arc<OrderExecutor>,
+    pub market_researcher: Option<Arc<MarketResearcher>>,
     pub dry_run: bool,
 }
 
@@ -82,12 +85,30 @@ async fn main() -> Result<()> {
     let order_executor = Arc::new(OrderExecutor::new(&config, args.dry_run).await?);
     let strategy_engine = Arc::new(RwLock::new(StrategyEngine::new(&config.strategy)));
 
+    // Initialize browser for market research (optional)
+    let market_researcher = if config.browser.enabled {
+        match MarketResearcher::new(&config.browser) {
+            researcher if researcher.is_available() => {
+                info!("Browser research enabled via Azul");
+                Some(Arc::new(researcher))
+            }
+            _ => {
+                warn!("Browser enabled but Azul not available");
+                None
+            }
+        }
+    } else {
+        info!("Browser research disabled");
+        None
+    };
+
     let state = Arc::new(AppState {
         config: config.clone(),
         orderbook_manager: orderbook_manager.clone(),
         risk_manager: risk_manager.clone(),
         strategy_engine: strategy_engine.clone(),
         order_executor: order_executor.clone(),
+        market_researcher,
         dry_run: args.dry_run,
     });
 

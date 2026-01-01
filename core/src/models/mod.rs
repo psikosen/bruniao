@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 use uuid::Uuid;
 
+use crate::browser::BrowserConfig;
+
 /// Main configuration structure
 #[derive(Debug, Clone, Deserialize)]
 pub struct Config {
@@ -15,6 +17,8 @@ pub struct Config {
     pub strategy: StrategyConfig,
     pub database: DatabaseConfig,
     pub qdrant: QdrantConfig,
+    #[serde(default)]
+    pub browser: BrowserConfig,
 }
 
 impl Config {
