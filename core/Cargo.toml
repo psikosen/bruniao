@@ -32,6 +32,15 @@ sqlx = { version = "0.7", features = ["runtime-tokio", "sqlite", "chrono"] }
 # Qdrant vector database
 qdrant-client = "1.7"
 
+# DragonflyDB/Redis - High-performance distributed cache
+redis = { version = "0.24", features = ["tokio-comp", "connection-manager", "cluster-async"] }
+deadpool-redis = "0.14"
+
+# RabbitMQ - Async message broker
+lapin = "2.3"
+deadpool-lapin = "0.11"
+async-trait = "0.1"
+
 # Utils
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.6", features = ["v4", "serde"] }

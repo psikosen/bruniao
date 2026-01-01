@@ -79,7 +79,7 @@ impl SearchEngine {
 }
 
 /// Result from a web search
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SearchResult {
     pub title: String,
     pub url: String,
@@ -88,7 +88,7 @@ pub struct SearchResult {
 }
 
 /// Result from fetching a page
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PageContent {
     pub url: String,
     pub title: String,
