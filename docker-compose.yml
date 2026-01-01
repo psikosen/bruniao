@@ -1,6 +1,52 @@
 version: '3.8'
 
 services:
+  # DragonflyDB - High-Performance Redis-Compatible Cache (25x faster than Redis)
+  dragonfly:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    container_name: bruniao-dragonfly
+    ulimits:
+      memlock: -1
+    ports:
+      - "6379:6379"
+    volumes:
+      - dragonfly_data:/data
+    command: >
+      --logtostderr
+      --cache_mode=true
+      --maxmemory=2gb
+      --hz=100
+      --tcp_keepalive=300
+      --snapshot_cron="*/30 * * * *"
+      --dbfilename=bruniao.rdb
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # RabbitMQ - High-Performance Message Broker
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: bruniao-rabbitmq
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=bruniao
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-bruniao_secret}
+      - RABBITMQ_DEFAULT_VHOST=trading
+      - RABBITMQ_VM_MEMORY_HIGH_WATERMARK=0.8
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
   # Qdrant Vector Database for Bot Memory
   qdrant:
     image: qdrant/qdrant:latest
@@ -28,6 +74,10 @@ services:
     depends_on:
       qdrant:
         condition: service_healthy
+      dragonfly:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     volumes:
       - ./config:/app/config:ro
       - bot_data:/var/lib/bruniao
@@ -38,6 +88,8 @@ services:
       - BRUNIAO_POLYMARKET__API_SECRET=${POLYMARKET_API_SECRET}
       - BRUNIAO_POLYMARKET__API_PASSPHRASE=${POLYMARKET_API_PASSPHRASE}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - DRAGONFLY_URL=redis://dragonfly:6379
+      - RABBITMQ_URL=amqp://bruniao:${RABBITMQ_PASSWORD:-bruniao_secret}@rabbitmq:5672/trading
     restart: unless-stopped
     command: ["--config", "/app/config/production.yaml"]
 
@@ -65,17 +117,52 @@ services:
     depends_on:
       qdrant:
         condition: service_healthy
+      dragonfly:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     volumes:
       - ./config:/app/config:ro
     environment:
       - QDRANT_URL=http://qdrant:6333
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DRAGONFLY_URL=redis://dragonfly:6379
+      - RABBITMQ_URL=amqp://bruniao:${RABBITMQ_PASSWORD:-bruniao_secret}@rabbitmq:5672/trading
     restart: unless-stopped
+
+  # Debate Worker - Event-driven bot debate processing
+  debate-worker:
+    build:
+      context: ./analysis
+      dockerfile: Dockerfile
+    container_name: bruniao-debate-worker
+    command: ["python", "-m", "workers.debate_worker"]
+    depends_on:
+      qdrant:
+        condition: service_healthy
+      dragonfly:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - ./config:/app/config:ro
+    environment:
+      - QDRANT_URL=http://qdrant:6333
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DRAGONFLY_URL=redis://dragonfly:6379
+      - RABBITMQ_URL=amqp://bruniao:${RABBITMQ_PASSWORD:-bruniao_secret}@rabbitmq:5672/trading
+      - MAX_CONCURRENT_DEBATES=5
+    restart: unless-stopped
+    deploy:
+      replicas: 2  # Scale debate workers horizontally
 
 volumes:
   qdrant_data:
   bot_data:
+  dragonfly_data:
+  rabbitmq_data:
 
 networks:
   default:
