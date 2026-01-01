@@ -50,3 +50,13 @@ llm:
     enabled: true
     max_entries: 5000
     default_ttl_seconds: 3600
+
+# Browser (Azul) - Disabled by default in production
+# Enable for agents to research markets via web search
+browser:
+  enabled: false
+  azul_path: "/usr/local/bin/azul"
+  js_rendering: true
+  ai_provider: "anthropic"
+  default_search_engine: "duckduckgo"
+  timeout_seconds: 30
