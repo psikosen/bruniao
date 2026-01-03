@@ -59,10 +59,13 @@ impl BotMemory {
 
     /// Store a trading decision with its embedding
     pub async fn store_decision(&self, memory: &DecisionMemory) -> Result<()> {
+        let payload: std::collections::HashMap<String, serde_json::Value> =
+            serde_json::from_value(serde_json::to_value(memory)?)?;
+
         let point = PointStruct::new(
             memory.id.to_string(),
             memory.embedding.clone(),
-            serde_json::to_value(memory)?.try_into()?,
+            payload,
         );
 
         self.client
@@ -105,10 +108,13 @@ impl BotMemory {
 
     /// Store a bot debate/discussion
     pub async fn store_debate(&self, debate: &BotDebate) -> Result<()> {
+        let payload: std::collections::HashMap<String, serde_json::Value> =
+            serde_json::from_value(serde_json::to_value(debate)?)?;
+
         let point = PointStruct::new(
             debate.id.to_string(),
             debate.embedding.clone(),
-            serde_json::to_value(debate)?.try_into()?,
+            payload,
         );
 
         self.client
@@ -164,14 +170,19 @@ impl BotMemory {
             .result
             .into_iter()
             .filter_map(|point| {
-                serde_json::from_value(
-                    point
-                        .payload
-                        .into_iter()
-                        .collect::<serde_json::Map<String, serde_json::Value>>()
-                        .into(),
-                )
-                .ok()
+                // Convert qdrant::Value to serde_json::Value
+                let payload_map: std::collections::HashMap<String, serde_json::Value> = point
+                    .payload
+                    .into_iter()
+                    .filter_map(|(k, v)| {
+                        // Convert qdrant Value to serde_json Value
+                        serde_json::to_value(&v).ok().map(|json_v| (k, json_v))
+                    })
+                    .collect();
+
+                serde_json::from_value(serde_json::Value::Object(
+                    payload_map.into_iter().collect()
+                )).ok()
             })
             .collect();
 

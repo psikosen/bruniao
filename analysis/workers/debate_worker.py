@@ -13,7 +13,6 @@ This worker enables:
 """
 
 import asyncio
-import os
 import signal
 from datetime import datetime
 from typing import Optional
@@ -38,7 +37,6 @@ from signals.bot_debate import (
     DebateOrchestrator,
     DEFAULT_BOTS,
     Debate,
-    BotPersona,
 )
 from signals.prompt_cache import CachedLLMClient
 
@@ -129,7 +127,11 @@ class DebateWorker:
                         consensus=cached.consensus,
                         confidence=cached.confidence,
                         decision=None,
-                        rounds_completed=cached.messages_count // len(request.participants) if request.participants else 0,
+                        rounds_completed=(
+                            cached.messages_count // len(request.participants)
+                            if request.participants
+                            else 0
+                        ),
                         duration_ms=0,  # From cache
                         timestamp=cached.cached_at,
                     )
@@ -138,7 +140,9 @@ class DebateWorker:
 
                 # Run the debate
                 result = await self._run_debate(request)
-                duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+                duration_ms = int(
+                    (datetime.utcnow() - start_time).total_seconds() * 1000
+                )
                 result.duration_ms = duration_ms
 
                 # Cache the result
@@ -183,7 +187,9 @@ class DebateWorker:
                 )
 
                 # Publish error result
-                duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+                duration_ms = int(
+                    (datetime.utcnow() - start_time).total_seconds() * 1000
+                )
                 error_result = DebateResultMessage(
                     debate_id=request.debate_id,
                     topic=request.topic,
@@ -209,14 +215,20 @@ class DebateWorker:
         """Run a debate and return the result"""
         # Parse context
         import json
+
         try:
-            context = json.loads(request.context) if isinstance(request.context, str) else request.context
+            context = (
+                json.loads(request.context)
+                if isinstance(request.context, str)
+                else request.context
+            )
         except (json.JSONDecodeError, TypeError):
             context = {"raw_context": request.context}
 
         # Select participants
         participants = [
-            bot for bot in DEFAULT_BOTS
+            bot
+            for bot in DEFAULT_BOTS
             if bot.id in request.participants or not request.participants
         ][:4]
 
@@ -231,9 +243,9 @@ class DebateWorker:
 
         # Set max rounds based on urgency
         max_rounds = {
-            "high": 2,    # Fast decision
+            "high": 2,  # Fast decision
             "medium": 3,  # Balanced
-            "low": 5,     # Thorough
+            "low": 5,  # Thorough
         }.get(request.urgency, request.max_rounds)
 
         self.orchestrator.max_rounds = max_rounds
@@ -249,7 +261,9 @@ class DebateWorker:
 
         # Calculate confidence from debate
         if completed_debate.messages:
-            avg_confidence = sum(m.confidence for m in completed_debate.messages) / len(completed_debate.messages)
+            avg_confidence = sum(m.confidence for m in completed_debate.messages) / len(
+                completed_debate.messages
+            )
         else:
             avg_confidence = 0.5
 
@@ -259,7 +273,11 @@ class DebateWorker:
             consensus=completed_debate.consensus or "No consensus reached",
             confidence=avg_confidence,
             decision=trading_decision,
-            rounds_completed=len(completed_debate.messages) // len(participants) if participants else 0,
+            rounds_completed=(
+                len(completed_debate.messages) // len(participants)
+                if participants
+                else 0
+            ),
             duration_ms=0,  # Will be set by caller
             timestamp=int(datetime.utcnow().timestamp()),
         )
@@ -304,14 +322,15 @@ class DebateWorker:
             return None
 
         import uuid
+
         return {
             "decision_id": str(uuid.uuid4()),
             "decision_type": "debate_consensus",
             "market_id": market_id,
             "token_id": "",  # Would need market data to determine
             "side": side,
-            "price": "0",    # Market order
-            "size": "1",     # Minimum size
+            "price": "0",  # Market order
+            "size": "1",  # Minimum size
             "order_type": "gtc",
             "confidence": confidence,
             "reason": debate.consensus,
@@ -329,6 +348,7 @@ async def main():
 
     # Initialize LLM client with caching
     from anthropic import AsyncAnthropic
+
     anthropic_client = AsyncAnthropic()
     llm_client = CachedLLMClient(
         anthropic_client=anthropic_client,

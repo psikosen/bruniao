@@ -24,6 +24,7 @@ logger = structlog.get_logger()
 
 class BotRole(Enum):
     """Roles that bots can take in debates."""
+
     MARKET_MAKER = "market_maker"
     RISK_MANAGER = "risk_manager"
     ANALYST = "analyst"
@@ -34,6 +35,7 @@ class BotRole(Enum):
 @dataclass
 class BotPersona:
     """A bot's personality and role in debates."""
+
     id: str
     name: str
     role: BotRole
@@ -53,6 +55,7 @@ class BotPersona:
 @dataclass
 class DebateMessage:
     """A single message in a debate."""
+
     id: str
     participant_id: str
     participant_name: str
@@ -76,6 +79,7 @@ class DebateMessage:
 @dataclass
 class Debate:
     """A complete debate session."""
+
     id: str
     topic: str
     market_id: Optional[str]
@@ -320,11 +324,12 @@ Respond in JSON format:
             return False
 
         # Simple heuristic: check if last round had agreement signals
-        last_round = debate.messages[-len(debate.participants):]
+        last_round = debate.messages[-len(debate.participants) :]
         agreement_words = ["agree", "consensus", "correct", "valid point"]
 
         agreement_count = sum(
-            1 for msg in last_round
+            1
+            for msg in last_round
             if any(word in msg.content.lower() for word in agreement_words)
         )
 
@@ -408,7 +413,9 @@ class PreTradeDebate:
         negative_score = sum(1 for s in negative_signals if s in consensus_lower)
 
         should_trade = positive_score > negative_score
-        confidence = abs(positive_score - negative_score) / max(len(positive_signals), 1)
+        confidence = abs(positive_score - negative_score) / max(
+            len(positive_signals), 1
+        )
 
         return {
             "should_trade": should_trade,

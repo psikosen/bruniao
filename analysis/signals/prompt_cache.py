@@ -10,7 +10,7 @@ Based on: https://ngrok.com/blog/prompt-caching
 import hashlib
 import json
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
 import asyncio
@@ -21,12 +21,14 @@ logger = structlog.get_logger()
 # Try to import LLM clients
 try:
     from anthropic import AsyncAnthropic
+
     HAS_ANTHROPIC = True
 except ImportError:
     HAS_ANTHROPIC = False
 
 try:
     from openai import AsyncOpenAI
+
     HAS_OPENAI = True
 except ImportError:
     HAS_OPENAI = False
@@ -35,6 +37,7 @@ except ImportError:
 @dataclass
 class CacheEntry:
     """A cached prompt response."""
+
     key: str
     response: str
     model: str
@@ -50,6 +53,7 @@ class CacheEntry:
 @dataclass
 class CacheStats:
     """Cache performance statistics."""
+
     hits: int = 0
     misses: int = 0
     evictions: int = 0
@@ -91,12 +95,15 @@ class PromptCache:
         temperature: float,
     ) -> str:
         """Generate a cache key from prompt parameters."""
-        content = json.dumps({
-            "system": system_prompt,
-            "user": user_prompt,
-            "model": model,
-            "temperature": temperature,
-        }, sort_keys=True)
+        content = json.dumps(
+            {
+                "system": system_prompt,
+                "user": user_prompt,
+                "model": model,
+                "temperature": temperature,
+            },
+            sort_keys=True,
+        )
         return hashlib.sha256(content.encode()).hexdigest()[:32]
 
     async def get(self, key: str) -> Optional[str]:

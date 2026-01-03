@@ -8,21 +8,19 @@ High-performance distributed caching for:
 - Cross-service data sharing
 """
 
-import asyncio
 import json
 import hashlib
 import os
 from datetime import datetime
-from typing import Any, Optional, TypeVar, Generic
+from typing import Any, Optional, TypeVar
 from dataclasses import dataclass, asdict
-from decimal import Decimal
 
 import redis.asyncio as redis
 import structlog
 
 logger = structlog.get_logger()
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 # Cache key prefixes
@@ -52,14 +50,15 @@ class CacheTTL:
     SESSION = 3600
     LOCK = 30
     STRATEGY_STATE = 10
-    PROMPT_CACHE = 3600      # LLM responses
-    DEBATE_CACHE = 1800      # Bot debates (30 min)
+    PROMPT_CACHE = 3600  # LLM responses
+    DEBATE_CACHE = 1800  # Bot debates (30 min)
     EMBEDDING_CACHE = 86400  # Embeddings (24 hours)
 
 
 @dataclass
 class CachedPromptResponse:
     """Cached LLM response"""
+
     prompt_hash: str
     model: str
     response: str
@@ -72,6 +71,7 @@ class CachedPromptResponse:
 @dataclass
 class CachedDebate:
     """Cached bot debate"""
+
     debate_id: str
     topic: str
     market_id: str
@@ -86,6 +86,7 @@ class CachedDebate:
 @dataclass
 class CachedMarketData:
     """Cached market data snapshot"""
+
     market_id: str
     condition_id: str
     question: str
@@ -217,9 +218,7 @@ class CacheClient:
     ) -> bool:
         """Acquire a distributed lock"""
         full_key = self._key(CacheKeys.LOCK, lock_name)
-        acquired = await self._client.set(
-            full_key, holder_id, nx=True, ex=ttl
-        )
+        acquired = await self._client.set(full_key, holder_id, nx=True, ex=ttl)
         return acquired is not None
 
     async def release_lock(self, lock_name: str, holder_id: str) -> bool:
