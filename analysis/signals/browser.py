@@ -11,7 +11,6 @@ Requires: https://github.com/0xSero/Azul
 import asyncio
 import json
 import shutil
-import subprocess
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Optional, Dict, Any
@@ -23,6 +22,7 @@ logger = structlog.get_logger()
 
 class SearchEngine(Enum):
     """Supported search engines."""
+
     DUCKDUCKGO = ""
     GOOGLE = "g:"
     WIKIPEDIA = "w:"
@@ -34,6 +34,7 @@ class SearchEngine(Enum):
 @dataclass
 class SearchResult:
     """Result from a web search."""
+
     title: str
     url: str
     snippet: str
@@ -43,6 +44,7 @@ class SearchResult:
 @dataclass
 class PageContent:
     """Content fetched from a web page."""
+
     url: str
     title: str
     content: str
@@ -52,6 +54,7 @@ class PageContent:
 @dataclass
 class BrowserConfig:
     """Browser configuration."""
+
     enabled: bool = False
     azul_path: str = "azul"
     js_rendering: bool = False
@@ -84,7 +87,7 @@ class BrowserAgent:
             logger.warning(
                 "azul_browser_not_found",
                 path=self.config.azul_path,
-                install_url="https://github.com/0xSero/Azul"
+                install_url="https://github.com/0xSero/Azul",
             )
         return self._available
 
@@ -120,14 +123,17 @@ class BrowserAgent:
         try:
             proc = await asyncio.create_subprocess_exec(
                 self.config.azul_path,
-                "--headless", "--search", search_query, "--format", "json",
+                "--headless",
+                "--search",
+                search_query,
+                "--format",
+                "json",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
 
             stdout, stderr = await asyncio.wait_for(
-                proc.communicate(),
-                timeout=self.config.timeout_seconds
+                proc.communicate(), timeout=self.config.timeout_seconds
             )
 
             if proc.returncode != 0:
@@ -183,8 +189,7 @@ class BrowserAgent:
             )
 
             stdout, stderr = await asyncio.wait_for(
-                proc.communicate(),
-                timeout=self.config.timeout_seconds
+                proc.communicate(), timeout=self.config.timeout_seconds
             )
 
             if proc.returncode != 0:
@@ -222,16 +227,20 @@ class BrowserAgent:
         try:
             proc = await asyncio.create_subprocess_exec(
                 self.config.azul_path,
-                "--headless", "--fetch", url,
-                "--ai-summarize", prompt,
-                "--provider", self.config.ai_provider,
+                "--headless",
+                "--fetch",
+                url,
+                "--ai-summarize",
+                prompt,
+                "--provider",
+                self.config.ai_provider,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
 
             stdout, stderr = await asyncio.wait_for(
                 proc.communicate(),
-                timeout=self.config.timeout_seconds * 2  # Extra time for AI
+                timeout=self.config.timeout_seconds * 2,  # Extra time for AI
             )
 
             if proc.returncode != 0:
@@ -244,17 +253,21 @@ class BrowserAgent:
             logger.error("summarize_error", error=str(e))
             return None
 
-    def _parse_raw_output(self, output: str, engine: SearchEngine) -> List[SearchResult]:
+    def _parse_raw_output(
+        self, output: str, engine: SearchEngine
+    ) -> List[SearchResult]:
         """Parse raw output when JSON fails."""
         results = []
         for line in output.strip().split("\n"):
             if line.startswith("http"):
-                results.append(SearchResult(
-                    title="",
-                    url=line.strip(),
-                    snippet="",
-                    source=engine.name.lower(),
-                ))
+                results.append(
+                    SearchResult(
+                        title="",
+                        url=line.strip(),
+                        snippet="",
+                        source=engine.name.lower(),
+                    )
+                )
         return results
 
 
@@ -298,17 +311,13 @@ class MarketResearcher:
         # Search with different engines
         for engine in [SearchEngine.DUCKDUCKGO, SearchEngine.GOOGLE]:
             # Main question search
-            results = await self.browser.search(
-                f"{market_question} prediction",
-                engine
-            )
+            results = await self.browser.search(f"{market_question} prediction", engine)
             all_results.extend(results)
 
             # Keyword searches
             for keyword in keywords[:3]:  # Limit keywords
                 kw_results = await self.browser.search(
-                    f"{keyword} {market_question}",
-                    engine
+                    f"{keyword} {market_question}", engine
                 )
                 all_results.extend(kw_results)
 
@@ -323,15 +332,16 @@ class MarketResearcher:
         # Summarize top results
         for result in unique_results[:3]:
             summary = await self.browser.summarize_page(
-                result.url,
-                f"Summarize how this page relates to: {market_question}"
+                result.url, f"Summarize how this page relates to: {market_question}"
             )
             if summary:
-                summaries.append({
-                    "url": result.url,
-                    "title": result.title,
-                    "summary": summary,
-                })
+                summaries.append(
+                    {
+                        "url": result.url,
+                        "title": result.title,
+                        "summary": summary,
+                    }
+                )
 
         return {
             "question": market_question,
@@ -346,8 +356,7 @@ class MarketResearcher:
     async def search_news(self, topic: str) -> List[SearchResult]:
         """Search for recent news about a topic."""
         return await self.browser.search(
-            f"{topic} news latest",
-            SearchEngine.DUCKDUCKGO
+            f"{topic} news latest", SearchEngine.DUCKDUCKGO
         )
 
     async def search_academic(self, topic: str) -> List[SearchResult]:
@@ -359,8 +368,7 @@ class MarketResearcher:
         results = await self.browser.search(query, SearchEngine.WIKIPEDIA)
         if results:
             return await self.browser.summarize_page(
-                results[0].url,
-                f"Provide a brief factual summary about: {query}"
+                results[0].url, f"Provide a brief factual summary about: {query}"
             )
         return None
 
@@ -395,7 +403,7 @@ def create_browser(config_dict: Optional[Dict[str, Any]] = None) -> BrowserAgent
         ai_provider=config_dict.get("ai_provider", "anthropic"),
         default_search_engine=engine_map.get(
             config_dict.get("default_search_engine", "duckduckgo").lower(),
-            SearchEngine.DUCKDUCKGO
+            SearchEngine.DUCKDUCKGO,
         ),
         timeout_seconds=config_dict.get("timeout_seconds", 30),
     )

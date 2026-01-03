@@ -8,7 +8,6 @@ High-performance async message broker for:
 - Async task processing
 """
 
-import asyncio
 import json
 import os
 import uuid
@@ -23,7 +22,7 @@ import structlog
 
 logger = structlog.get_logger()
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 # Exchange names
@@ -75,6 +74,7 @@ class RoutingKeys:
 @dataclass
 class TradingDecisionMessage:
     """Trading decision from strategy engine"""
+
     decision_id: str
     decision_type: str  # "market_making" | "arbitrage"
     market_id: str
@@ -91,6 +91,7 @@ class TradingDecisionMessage:
 @dataclass
 class DebateRequestMessage:
     """Request for bot debate"""
+
     debate_id: str
     topic: str
     market_id: str
@@ -104,6 +105,7 @@ class DebateRequestMessage:
 @dataclass
 class DebateResultMessage:
     """Result of bot debate"""
+
     debate_id: str
     topic: str
     consensus: str
@@ -117,6 +119,7 @@ class DebateResultMessage:
 @dataclass
 class RiskAlertMessage:
     """Risk management alert"""
+
     alert_id: str
     alert_type: str  # "warning" | "critical" | "kill_switch"
     metric: str
@@ -129,6 +132,7 @@ class RiskAlertMessage:
 @dataclass
 class MarketAnalysisRequest:
     """Request for market analysis"""
+
     request_id: str
     market_id: str
     analysis_type: str  # "sentiment" | "technical" | "fundamental"
@@ -140,6 +144,7 @@ class MarketAnalysisRequest:
 @dataclass
 class MarketAnalysisResult:
     """Result of market analysis"""
+
     request_id: str
     market_id: str
     analysis_type: str
@@ -158,8 +163,7 @@ class MessageQueueClient:
         prefetch_count: int = 10,
     ):
         self.url = url or os.getenv(
-            "RABBITMQ_URL",
-            "amqp://bruniao:bruniao_secret@localhost:5672/trading"
+            "RABBITMQ_URL", "amqp://bruniao:bruniao_secret@localhost:5672/trading"
         )
         self.prefetch_count = prefetch_count
         self._connection: Optional[AbstractRobustConnection] = None
@@ -207,21 +211,37 @@ class MessageQueueClient:
         # Declare and bind queues
         queue_bindings = [
             (Queues.TRADING_DECISIONS, Exchanges.TRADING, [RoutingKeys.DECISION_NEW]),
-            (Queues.ORDER_EXECUTION, Exchanges.ORDERS, [
-                RoutingKeys.ORDER_PLACED,
-                RoutingKeys.ORDER_FILLED,
-                RoutingKeys.ORDER_CANCELLED,
-            ]),
+            (
+                Queues.ORDER_EXECUTION,
+                Exchanges.ORDERS,
+                [
+                    RoutingKeys.ORDER_PLACED,
+                    RoutingKeys.ORDER_FILLED,
+                    RoutingKeys.ORDER_CANCELLED,
+                ],
+            ),
             (Queues.ORDER_FILLS, Exchanges.ORDERS, [RoutingKeys.ORDER_FILLED]),
-            (Queues.RISK_ALERTS, Exchanges.RISK, [
-                RoutingKeys.RISK_WARNING,
-                RoutingKeys.RISK_CRITICAL,
-                RoutingKeys.RISK_KILL_SWITCH,
-            ]),
+            (
+                Queues.RISK_ALERTS,
+                Exchanges.RISK,
+                [
+                    RoutingKeys.RISK_WARNING,
+                    RoutingKeys.RISK_CRITICAL,
+                    RoutingKeys.RISK_KILL_SWITCH,
+                ],
+            ),
             (Queues.DEBATE_REQUESTS, Exchanges.DEBATES, [RoutingKeys.DEBATE_START]),
             (Queues.DEBATE_RESULTS, Exchanges.DEBATES, [RoutingKeys.DEBATE_CONSENSUS]),
-            (Queues.ANALYSIS_REQUESTS, Exchanges.ANALYSIS, [RoutingKeys.ANALYSIS_REQUEST]),
-            (Queues.ANALYSIS_RESULTS, Exchanges.ANALYSIS, [RoutingKeys.ANALYSIS_COMPLETE]),
+            (
+                Queues.ANALYSIS_REQUESTS,
+                Exchanges.ANALYSIS,
+                [RoutingKeys.ANALYSIS_REQUEST],
+            ),
+            (
+                Queues.ANALYSIS_RESULTS,
+                Exchanges.ANALYSIS,
+                [RoutingKeys.ANALYSIS_COMPLETE],
+            ),
         ]
 
         for queue_name, exchange_name, routing_keys in queue_bindings:
@@ -252,13 +272,15 @@ class MessageQueueClient:
             raise ValueError(f"Unknown exchange: {exchange}")
 
         body = json.dumps(
-            asdict(message) if hasattr(message, '__dataclass_fields__') else message,
+            asdict(message) if hasattr(message, "__dataclass_fields__") else message,
             default=str,
         ).encode()
 
         msg = Message(
             body,
-            delivery_mode=DeliveryMode.PERSISTENT if persistent else DeliveryMode.NOT_PERSISTENT,
+            delivery_mode=(
+                DeliveryMode.PERSISTENT if persistent else DeliveryMode.NOT_PERSISTENT
+            ),
             priority=priority,
             content_type="application/json",
             message_id=str(uuid.uuid4()),
@@ -288,7 +310,7 @@ class MessageQueueClient:
                     body = json.loads(message.body.decode())
 
                     # Convert to dataclass if type specified
-                    if message_type and hasattr(message_type, '__dataclass_fields__'):
+                    if message_type and hasattr(message_type, "__dataclass_fields__"):
                         body = message_type(**body)
 
                     await handler(body)
@@ -478,7 +500,9 @@ class EventDrivenDebateOrchestrator:
     def __init__(
         self,
         mq: MessageQueueClient,
-        debate_handler: Callable[[DebateRequestMessage], Coroutine[Any, Any, DebateResultMessage]],
+        debate_handler: Callable[
+            [DebateRequestMessage], Coroutine[Any, Any, DebateResultMessage]
+        ],
     ):
         self.mq = mq
         self.debate_handler = debate_handler
@@ -524,7 +548,9 @@ class EventDrivenDebateOrchestrator:
                     confidence=0.0,
                     decision=None,
                     rounds_completed=0,
-                    duration_ms=int((datetime.utcnow() - start_time).total_seconds() * 1000),
+                    duration_ms=int(
+                        (datetime.utcnow() - start_time).total_seconds() * 1000
+                    ),
                     timestamp=int(datetime.utcnow().timestamp()),
                 )
                 await self.mq.publish_debate_result(error_result)

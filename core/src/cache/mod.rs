@@ -12,8 +12,7 @@ use deadpool_redis::{Config, Pool, Runtime};
 use redis::AsyncCommands;
 use rust_decimal::Decimal;
 use serde::{de::DeserializeOwned, Serialize};
-use std::time::Duration;
-use tracing::{debug, error, info, instrument, warn};
+use tracing::{debug, info, instrument};
 
 /// Cache key prefixes for different data types
 pub mod keys {

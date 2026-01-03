@@ -9,7 +9,6 @@ import asyncio
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Optional, List, Dict
-from datetime import datetime
 import structlog
 
 logger = structlog.get_logger()
@@ -18,6 +17,7 @@ logger = structlog.get_logger()
 @dataclass
 class Quote:
     """A bid or ask quote."""
+
     price: Decimal
     size: Decimal
     side: str  # 'buy' or 'sell'
@@ -26,6 +26,7 @@ class Quote:
 @dataclass
 class MarketState:
     """Current state of a market."""
+
     token_id: str
     best_bid: Decimal
     best_ask: Decimal
@@ -38,6 +39,7 @@ class MarketState:
 @dataclass
 class InventoryState:
     """Current inventory position."""
+
     position: Decimal
     max_position: Decimal
     skew: Decimal  # -1 to 1, normalized
@@ -116,18 +118,22 @@ class MicroMarketMaker:
 
         # Check if we can add to position
         if inventory.position + bid_size <= inventory.max_position:
-            quotes.append(Quote(
-                price=bid_price,
-                size=bid_size,
-                side='buy',
-            ))
+            quotes.append(
+                Quote(
+                    price=bid_price,
+                    size=bid_size,
+                    side="buy",
+                )
+            )
 
         if inventory.position - ask_size >= -inventory.max_position:
-            quotes.append(Quote(
-                price=ask_price,
-                size=ask_size,
-                side='sell',
-            ))
+            quotes.append(
+                Quote(
+                    price=ask_price,
+                    size=ask_size,
+                    side="sell",
+                )
+            )
 
         return quotes
 
@@ -162,6 +168,7 @@ class MicroMarketMaker:
 @dataclass
 class ArbitrageOpportunity:
     """Detected complement arbitrage opportunity."""
+
     yes_token_id: str
     no_token_id: str
     yes_price: Decimal
@@ -277,7 +284,9 @@ class StrategyOrchestrator:
 
                     # Generate market making quotes
                     inventory = await get_inventory(condition_id)
-                    yes_quotes = self.market_maker.calculate_quotes(yes_state, inventory)
+                    yes_quotes = self.market_maker.calculate_quotes(
+                        yes_state, inventory
+                    )
 
                     if self.market_maker.should_update_quotes(yes_token, yes_quotes):
                         await self._execute_quotes(yes_token, yes_quotes, execute_order)
@@ -299,17 +308,17 @@ class StrategyOrchestrator:
         await asyncio.gather(
             execute_order(
                 token_id=arb.yes_token_id,
-                side='buy',
+                side="buy",
                 price=arb.yes_price,
                 size=arb.executable_size,
-                order_type='FOK',
+                order_type="FOK",
             ),
             execute_order(
                 token_id=arb.no_token_id,
-                side='buy',
+                side="buy",
                 price=arb.no_price,
                 size=arb.executable_size,
-                order_type='FOK',
+                order_type="FOK",
             ),
         )
 
@@ -325,7 +334,7 @@ class StrategyOrchestrator:
                 side=quote.side,
                 price=quote.price,
                 size=quote.size,
-                order_type='GTC',
+                order_type="GTC",
             )
 
     def stop(self):

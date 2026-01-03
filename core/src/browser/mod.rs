@@ -8,8 +8,7 @@
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::process::{Command, Stdio};
-use std::io::{BufRead, BufReader, Write};
-use tokio::sync::mpsc;
+use std::io::BufRead;
 use tracing::{debug, info, warn};
 
 /// Browser configuration
