@@ -53,3 +53,6 @@ Thumbs.db
 *.pem
 *.key
 credentials.json
+memory/target/
+dashboard/node_modules/
+dashboard/.next/
